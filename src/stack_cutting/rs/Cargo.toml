@@ -1,0 +1,37 @@
+[package]
+name = "stack_cutting"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crystal-palace-sys = { workspace = true }
+crystal-palace-rs = { workspace = true }
+winapi = { workspace = true }
+ntapi  = { workspace = true }
+
+[lib]
+path = "common/lib.rs"
+
+[[bin]]
+name = "loader"
+path = "loader.rs"
+
+[[bin]]
+name = "free"
+path = "free.rs"
+
+[[bin]]
+name = "hook"
+path = "hook.rs"
+
+[[bin]]
+name = "proxy"
+path = "proxy.rs"
+
+[[bin]]
+name = "stackcut"
+path = "stackcut.rs"
+
+[[bin]]
+name = "stackcut_setup"
+path = "stackcut_setup.rs"

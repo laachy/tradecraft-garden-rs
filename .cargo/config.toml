@@ -1,0 +1,5 @@
+[env]
+HEADERS_PATH = { value = "c", relative = true }
+
+[build]
+target = "x86_64-pc-windows-gnu"

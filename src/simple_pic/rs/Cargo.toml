@@ -1,0 +1,14 @@
+[package]
+name = "simple_pic"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crystal-palace-sys = { workspace = true }
+crystal-palace-rs = { workspace = true }
+winapi = { workspace = true }
+ntapi  = { workspace = true }
+
+[[bin]]
+name = "services"
+path = "services.rs"

@@ -1,0 +1,30 @@
+[package]
+name = "loader6"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crystal-palace-sys = { workspace = true }
+crystal-palace-rs = { workspace = true }
+winapi = { workspace = true }
+ntapi  = { workspace = true }
+
+[[bin]]
+name = "loader"
+path = "loader.rs"
+
+[[bin]]
+name = "free"
+path = "free.rs"
+
+[[bin]]
+name = "hook"
+path = "hook.rs"
+
+[[bin]]
+name = "xorhooks"
+path = "xorhooks.rs"
+
+[[bin]]
+name = "xorhooks_setup"
+path = "xorhooks_setup.rs"

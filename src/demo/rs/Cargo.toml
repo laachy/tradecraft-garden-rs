@@ -1,0 +1,23 @@
+[package]
+name = "demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crystal-palace-sys = { workspace = true }
+crystal-palace-rs = { workspace = true }
+winapi = { workspace = true }
+ntapi  = { workspace = true }
+
+#[[bin]]
+#name = "run"
+#path = "run.rs"
+
+[[bin]]
+name = "testdll"
+path = "testdll.rs"
+
+[[bin]]
+name = "testobj"
+path = "testobj.rs"
+

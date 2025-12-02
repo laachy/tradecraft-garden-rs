@@ -1,0 +1,16 @@
+*
+!*/
+
+!.gitignore
+
+![Mm]akefile
+!common.mk
+
+!*.c
+!*.h
+!*.rs
+
+!*.toml
+!*.spec
+!*.md
+

@@ -1,0 +1,28 @@
+[workspace]
+resolver = "3"
+members = [
+    "loader1/rs",
+    "loader2/rs",
+    "loader3/rs",
+    "loader4/rs",
+    "loader5/rs",
+    "loader6/rs",
+    "loader7/rs",
+    "loader8/rs",
+    "simple_pic/rs",
+    "stack_cutting/rs",
+    "page_streaming/rs",
+    "demo/rs",
+]
+
+[workspace.dependencies]
+winapi = "0.3.9"
+ntapi = "0.4.1"
+crystal-palace-sys = { path = "../../crystal-palace-sys" }
+crystal-palace-rs = { path = "../../crystal-palace-rs"}
+
+[profile.release]
+opt-level = "z"
+panic = "abort"
+codegen-units = 1
+lto = true
