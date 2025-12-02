@@ -14,3 +14,4 @@
 !*.spec
 !*.md
 
+**/target/
