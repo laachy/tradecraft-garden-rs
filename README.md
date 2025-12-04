@@ -44,5 +44,6 @@ Loaders are located within `src` and contain a **Makefile** that compiles indivi
 
 # TODO and issues
 
- 1. The only thing that doesn't work is loader6/stackcutting, it wont link with rust objects, ive noticed crashing using .rs services module and im sure theres more issues. This will require a more in depth look into the crystal palace source code that I will do at a later date.
- 2. Other TODOs in crystal-sdk
+ 1. The only loader/capability that doesn't work is loader6/stackcutting, it wont link with rust objects (specific issue with stackcut.rs globals), ive noticed crashing using .rs services module and im sure theres more issues. This will require a more in depth look into the crystal palace source code that I will do at a later date.
+ 2. Optimise crystal palace directive does not work due to rust/llvm tail call optimisations where direct function symbols are not refrenced. This causes the linker to view them as unused where in reality their addresses are jumped to. To fix this would either need to disable tail call optimisations (at the callsite or globally for every function), provide a patch to the linker, or jmp, function symbol ??? (is that even possible, an idea anyway)
+ 3. Other TODOs in crystal-sdk
