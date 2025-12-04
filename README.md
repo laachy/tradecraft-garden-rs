@@ -8,6 +8,8 @@
 
 I have provided all of the original Tradecraft Garden as a means to give context to how **c to rust** PICOs translate in their writing conventions and also so that **c and rust** PICOs can be tested and linked with each other as a form of proof that this project can help expand the ecosystem which is position independent tradecraft in contrast to creating its own. For more information and a better learning experience I urge you to check out the original [Tradecraft Garden](https://tradecraftgarden.org/index.html) and the [blog](aff-wg.org) that explains new updates and design choices for the linker.
 
+One thing to also add is that I have noticed rust object files and end binaries to be smaller than its c counterparts. (You can compare for yourself)
+
 
 # Usage
 ### Rust nightly toolchain (Windows GNU)
