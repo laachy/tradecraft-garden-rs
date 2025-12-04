@@ -7,10 +7,11 @@ members = [
     "loader4/rs",
     "loader5/rs",
     "loader6/rs",
+    "loader6/modules/xorhooks/rs",
+    "loader6/modules/stackcutting/rs",
     "loader7/rs",
     "loader8/rs",
     "simple_pic/rs",
-    "stack_cutting/rs",
     "page_streaming/rs",
     "demo/rs",
 ]
@@ -18,8 +19,8 @@ members = [
 [workspace.dependencies]
 winapi = "0.3.9"
 ntapi = "0.4.1"
-crystal-palace-sys = { path = "../../crystal-palace-sys" }
-crystal-palace-rs = { path = "../../crystal-palace-rs"}
+crystal-bindings = "0.1.0"
+crystal-sdk = "0.1.0"
 
 [profile.release]
 opt-level = "z"

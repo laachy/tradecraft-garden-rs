@@ -5,7 +5,7 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{ffi, slice::from_raw_parts_mut};
-use crystal_palace_rs::import;
+use crystal_sdk::import;
 use winapi::shared::{minwindef::{DWORD, UINT}, ntdef::LPCSTR, windef::HWND};
 
 import!(USER32!MessageBoxA(hWnd: HWND, lpText: LPCSTR, lpCaption: LPCSTR, uType: UINT) -> ffi::c_int);
@@ -14,7 +14,7 @@ import!(USER32!MessageBoxA(hWnd: HWND, lpText: LPCSTR, lpCaption: LPCSTR, uType:
  * our xorkey, we're going to set this via our loader.spec
  */
 #[unsafe(no_mangle)]
-static xorkey: [u8;128] = [1; 128];
+static mut xorkey: [u8;128] = [1; 128];
 
 /* global to keep track of our DLL in memory. For simplicity's sake, this example
  * assumes the whole thing is RWX, but we could really do whatever we need between
@@ -26,7 +26,7 @@ static mut DLL: &mut [u8] = &mut [];
  */
 fn apply_xor(data: &mut [u8]) {
     for (i, byte) in data.iter_mut().enumerate() {
-        *byte ^= xorkey[i % 128];
+        *byte ^= unsafe { xorkey }[i % 128];
     }
 }
 
@@ -34,7 +34,7 @@ fn apply_xor(data: &mut [u8]) {
  * our MessageBoxA hook. See addhook "USER32$MessageBoxA" in loader.spec
  */
 #[unsafe(no_mangle)]
-extern "C" fn _MessageBoxA(h_wnd: HWND, _lp_text: LPCSTR, _lp_caption: LPCSTR, u_type: UINT) -> i32{
+extern "system" fn _xMessageBoxA(h_wnd: HWND, _lp_text: LPCSTR, _lp_caption: LPCSTR, u_type: UINT) -> i32{
     unsafe {
         let result;
 
@@ -50,7 +50,7 @@ extern "C" fn _MessageBoxA(h_wnd: HWND, _lp_text: LPCSTR, _lp_caption: LPCSTR, u
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn confighooks(dll_base: *mut u8, dll_sz: DWORD) {
+extern "C" fn confighooksXor(dll_base: *mut u8, dll_sz: DWORD) {
     /* track this information, because we will need it later */
     unsafe { DLL = from_raw_parts_mut(dll_base, dll_sz as _) };
 }

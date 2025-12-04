@@ -49,14 +49,14 @@ ULONG_PTR proxy(int argc) {
 /*
  * HOOKS
  */
-HMODULE WINAPI _LoadLibraryA (LPCSTR lpLibFileName) {
+HMODULE WINAPI _cLoadLibraryA (LPCSTR lpLibFileName) {
     call.function = (ULONG_PTR)LoadLibraryA;
     call.args[0]  = (ULONG_PTR)lpLibFileName;
  
     return (HMODULE)proxy(1);
 }
  
-int WINAPI _MessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption,UINT uType) {
+int WINAPI _cMessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption,UINT uType) {
     call.function = (ULONG_PTR)USER32$MessageBoxA;
     call.args[0]  = (ULONG_PTR)hWnd;
     call.args[1]  = (ULONG_PTR)lpText;
@@ -66,14 +66,14 @@ int WINAPI _MessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption,UINT uType) {
     return (int)proxy(4);
 }
  
-VOID WINAPI _Sleep (DWORD dwMilliseconds) {
+VOID WINAPI _cSleep (DWORD dwMilliseconds) {
     call.function = (ULONG_PTR)KERNEL32$Sleep;
     call.args[0]  = (ULONG_PTR)dwMilliseconds;
  
     proxy(1);
 }
  
-LPVOID WINAPI _VirtualAlloc (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
+LPVOID WINAPI _cVirtualAlloc (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     call.function = (ULONG_PTR)KERNEL32$VirtualAlloc;
     call.args[0]  = (ULONG_PTR)lpAddress;
     call.args[1]  = (ULONG_PTR)dwSize;
@@ -83,7 +83,7 @@ LPVOID WINAPI _VirtualAlloc (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocation
     return (LPVOID)proxy(4);
 }
  
-WINBOOL WINAPI _VirtualProtect (LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect) {
+WINBOOL WINAPI _cVirtualProtect (LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect) {
     call.function = (ULONG_PTR)KERNEL32$VirtualProtect;
     call.args[0]  = (ULONG_PTR)lpAddress;
     call.args[1]  = (ULONG_PTR)dwSize;
@@ -108,8 +108,12 @@ typedef void (*PICO_CONFIG_STACKCUTTING)(PROXY proxy, char * retaddr, char * fra
  * Implement the setupHooks function called by loader.c--which is our chance to call our exported config function.
  * We do this here because this is where our global vars with the stack cutting info live
  */
-void setupHooks(char * srchooks, char * dsthooks, DLLDATA * data, char * dstdll) {
+void setupHooksStackCutting(char * srchooks, char * dsthooks, DLLDATA * data, char * dstdll) {
+    /* call the function exported by our PICO */
     ((PICO_CONFIG_STACKCUTTING)PicoGetExport(srchooks, dsthooks, __tag_configstackcutting())) (CallProxy, (char *)call.spoofme.retaddr, (char *)call.spoofme.frameaddr);
+ 
+    /* continue the chain */
+    setupHooks(srchooks, dsthooks, data, dstdll);
 }
  
 /*

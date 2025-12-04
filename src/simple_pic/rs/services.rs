@@ -5,8 +5,8 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{mem, ptr::{null, null_mut}};
-use crystal_palace_rs::{import};
-use crystal_palace_sys::tcg::{DLLDATA, ParseDLL, findFunctionByHash, findModuleByHash};
+use crystal_sdk::{import};
+use crystal_bindings::tcg::{DLLDATA, ParseDLL, findFunctionByHash, findModuleByHash};
 use winapi::{shared::{minwindef::{FARPROC, HMODULE}, ntdef::LPCSTR}, um::winnt::{IMAGE_SCN_CNT_INITIALIZED_DATA, IMAGE_SCN_MEM_READ, IMAGE_SCN_MEM_WRITE, IMAGE_SECTION_HEADER}};
 
 

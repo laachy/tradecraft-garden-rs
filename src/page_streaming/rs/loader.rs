@@ -6,8 +6,8 @@ fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{ffi::c_void, mem, ptr::null_mut};
 
-use crystal_palace_rs::{append_data, import};
-use crystal_palace_sys::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoGetExport, PicoLoad, ProcessImports, SizeOfDLL};
+use crystal_sdk::{append_data, import};
+use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoGetExport, PicoLoad, ProcessImports, SizeOfDLL};
 use winapi::{shared::{minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{MEM_COMMIT, MEM_RESERVE, MEM_TOP_DOWN, PAGE_EXECUTE_READWRITE, PAGE_READWRITE}};
 
 type GuardExec2 = unsafe extern "C" fn(data: &DLLDATA, dst_dll: *const c_void);

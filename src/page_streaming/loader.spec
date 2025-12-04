@@ -43,7 +43,7 @@ x86:
         export
  
 x64:
-    load "bin/c/loader.x64.o"
+    load "bin/rs/loader.x64.o"
         make pic +gofirst
  
         run "../simple_pic/services.spec"

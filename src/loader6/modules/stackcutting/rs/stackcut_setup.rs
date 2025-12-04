@@ -6,10 +6,10 @@ fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{mem, ptr::{null, null_mut}};
 
-use crystal_palace_rs::{append_data, get_resource, import, mem::memcpy};
-use crystal_palace_sys::tcg::{DLLDATA, ParseDLL};
-use stack_cutting::{PROXY, get_frame, get_return};
-use winapi::{ctypes::c_void, shared::{basetsd::SIZE_T, minwindef::{DWORD, HMODULE, LPVOID, PDWORD}, ntdef::LPCSTR}, um::winnt::{IMAGE_SCN_MEM_EXECUTE, IMAGE_SECTION_HEADER, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_READWRITE}};
+use crystal_sdk::{append_data, get_resource, import, mem::memcpy};
+use crystal_bindings::tcg::{DLLDATA, ParseDLL};
+use stackcutting::{PROXY, get_frame, get_return};
+use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, HMODULE, LPVOID, PDWORD}, ntdef::LPCSTR}, um::winnt::{IMAGE_SCN_MEM_EXECUTE, IMAGE_SECTION_HEADER, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_READWRITE}};
 
 import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
 import!(KERNEL32!VirtualProtect(lpAddress: LPVOID, dwSize: SIZE_T, flNewProtect: DWORD, lpflOldProtect: PDWORD) -> LPVOID);
@@ -103,6 +103,7 @@ extern "C" fn SetupProxy() -> PROXY {
         /* copy our proxy PIC over */
         memcpy(proxy.unwrap_unchecked(), src.as_ptr(), src.len());
 
+        /* return proxy */
         mem::transmute::<_, PROXY>(proxy.unwrap_unchecked())
     }
 }
@@ -122,9 +123,4 @@ extern "C" fn go() {
         /* start our init chain */
         init();
     }
-}
-
-#[unsafe(no_mangle)]
-extern "C" fn getStart() -> *const c_void{
-    go as _
 }

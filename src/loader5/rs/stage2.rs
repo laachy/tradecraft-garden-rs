@@ -4,9 +4,9 @@
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
-use core::{mem, ptr::{self, null_mut}};
-use crystal_palace_rs::{append_data, get_resource, import};
-use crystal_palace_sys::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL};
+use core::{mem, ptr::{null_mut}};
+use crystal_sdk::{append_data, get_resource, import, mem::memset};
+use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL};
 use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{DLL_PROCESS_ATTACH, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE}};
 
 append_data!(my_data, findAppendedDLL);
@@ -53,7 +53,7 @@ extern "C" fn go(p_stage1: *const u8) {
          * with this COFF's other global variables (and function table too). We can't free() it. But, we can zero it
          * out and that's what we're going to do here. stage1 could have extracted the DLL as a separate resource
          * and then we could have freed that, but I'm playing with making this modular. So, this is what I got. */
-        ptr::write_bytes(dll_src.as_ptr() as *mut u8, 0, dll_src.len());
+        memset(dll_src.as_ptr() as _, 0, dll_src.len());
         
         /* let's free our Stage 1 too */
         VirtualFree(p_stage1 as _, 0, MEM_RELEASE);

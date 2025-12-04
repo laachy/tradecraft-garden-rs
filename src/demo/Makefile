@@ -1,22 +1,37 @@
-CC=i686-w64-mingw32-gcc
 CC_64=x86_64-w64-mingw32-gcc
 
-all: test.x64.dll test.x86.o test.x64.o
+RC_64       := x86_64-pc-windows-gnu
 
-#
-# x64 targets
-#
-run.x64.exe:
-	$(CC_64) -DWIN_X64 -masm=intel -Wall -Wno-pointer-arith src/run.c -o run.x64.exe -lws2_32
+BUILD_DIR   := bin
+C_BUILD_DIR := $(BUILD_DIR)/c
+RS_BUILD_DIR:= $(BUILD_DIR)/rs
 
-test.x64.dll:
-	$(CC_64) -shared src/testdll.c -o test.x64.dll
+RUN_EXE   := $(BUILD_DIR)/run.x64.exe
+TEST_DLL  := $(BUILD_DIR)/test.x64.dll
+C_OBJ     := $(C_BUILD_DIR)/test.x64.o
+RS_OBJ    :=  $(abspath $(RS_BUILD_DIR)/test.x64.o)
 
-test.x64.o:
-	$(CC_64) -c src/testobj.c -o test.x64.o
+all: dirs $(RUN_EXE) $(TEST_DLL) $(C_OBJ) $(RS_OBJ)
 
-#
-# Other targets
-#
+dirs:
+	mkdir -p $(BUILD_DIR) $(C_BUILD_DIR) $(RS_BUILD_DIR)
+
+$(RUN_EXE): c/run.c
+	$(CC_64) -DWIN_X64 -masm=intel -Wall -Wno-pointer-arith $< -o $@ -lws2_32
+
+$(TEST_DLL): c/testdll.c
+	$(CC_64) -shared $< -o $@
+
+$(C_OBJ): c/testobj.c
+	$(CC_64) -c $< -o $@
+
+$(RS_OBJ):
+	cd rs && \
+	cargo +nightly rustc \
+		--release \
+		--target $(RC_64) \
+		--bin testobj \
+		-- -Zno-link --emit=obj=$(RS_OBJ)
+
 clean:
-	rm -f run.x86.exe run.x64.exe test.x86.dll test.x64.dll test.x86.o test.x64.o
+	rm -rf $(BUILD_DIR)

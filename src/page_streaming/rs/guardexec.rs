@@ -3,8 +3,8 @@
 
 use core::{ptr::{null, null_mut}, slice::{from_raw_parts_mut}};
 
-use crystal_palace_rs::{import, mem::{memcpy, memset}};
-use crystal_palace_sys::tcg::{DLLDATA, SizeOfDLL, dprintf};
+use crystal_sdk::{import, mem::{memcpy, memset}};
+use crystal_bindings::tcg::{DLLDATA, SizeOfDLL, dprintf};
 use winapi::{shared::{basetsd::{SIZE_T, ULONG_PTR}, minwindef::{DWORD, FALSE, LPCVOID, LPVOID, PDWORD, ULONG}, ntdef::{HANDLE, LONG, PVOID, VOID}, ntstatus::STATUS_GUARD_PAGE_VIOLATION}, um::winnt::{EXCEPTION_POINTERS, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_WRITE, IMAGE_SECTION_HEADER, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READ, PAGE_GUARD, PAGE_READWRITE, PVECTORED_EXCEPTION_HANDLER}, vc::excpt::{EXCEPTION_CONTINUE_EXECUTION, EXCEPTION_CONTINUE_SEARCH}};
 
 #[panic_handler]
@@ -96,14 +96,14 @@ fn get_guard_region(address: usize) -> *const GUARDREGION {
  * this to a value, because 'patch' can't update an unintialized value.
  */
 #[unsafe(no_mangle)]
-static xorkey: [u8;128] = [1; 128];
+static mut xorkey: [u8;128] = [1; 128];
 
 /*
  * A simple routine to obfuscate and de-obfuscate memory with our payload stream data.
  */
 fn applyxor(data: &mut [u8]) {
     for (i, byte) in data.iter_mut().enumerate() {
-        *byte ^= xorkey[i % 16];
+        *byte ^= unsafe { xorkey }[i % 16];
     }
 }
 

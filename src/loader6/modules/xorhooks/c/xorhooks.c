@@ -29,29 +29,46 @@
 #include <windows.h>
 #include "tcg.h"
  
-typedef void (*PICO_CONFIG_HOOKS)(char * dllBase, DWORD dllsz);
- 
-/* this is a linker intrinsic to get the tag of our confighooks export function. */
-int __tag_confighooks();
+WINUSERAPI int WINAPI USER32$MessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption,UINT uType);
  
 /*
- * setupHooks is called by the loader to allow our tradecraft to work with the DLL hooking BOF.
- * This is our chance to grab an exported function and pass our configuration on.
+ * our xorkey, we're going to set this via our loader.spec
  */
-void setupHooks(char * srchooks, char * dsthooks, DLLDATA * data, char * dstdll) {
-    ((PICO_CONFIG_HOOKS)PicoGetExport(srchooks, dsthooks, __tag_confighooks())) (dstdll, SizeOfDLL(data));
-}
+char xorkey[128] = { 1 };
  
 /*
- * tradecraft modules in this architecture are responsible for kicking off the init chain and they're
- * responsible for providing a getStart() function to make the beginning of our PIC findable
+ * A simple routine to obfuscate and de-obfuscate our data
  */
-void init();
- 
-void go() {
-    init();
+void applyxor(char * data, DWORD len) {
+    for (DWORD x = 0; x < len; x++) {
+        data[x] ^= xorkey[x % 128];
+    }
 }
  
-char * getStart() {
-    return (char *)go;
+/* globals to keep track of our DLL in memory. For simplicity's sake, this example
+ * assumes the whole thing is RWX, but we could really do whatever we need between
+ * the loader and this hooking module */
+char * g_dllBase;
+DWORD  g_dllSize;
+ 
+/*
+ * our MessageBoxA hook. See addhook "USER32$MessageBoxA" in loader.spec
+ */
+int WINAPI _xMessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption,UINT uType) {
+    int result;
+ 
+    applyxor(g_dllBase, g_dllSize);
+ 
+    // may as well use our own strings, because the originals are garbled right now
+    result = USER32$MessageBoxA(hWnd, "Hello from hook.c!", "HOOKED!", uType);
+ 
+    applyxor(g_dllBase, g_dllSize);
+ 
+    return result;
+}
+ 
+void confighooksXor(char * dllBase, DWORD dllsz) {
+    /* track this information, because we will need it later */
+    g_dllBase = dllBase;
+    g_dllSize = dllsz;
 }

@@ -5,8 +5,8 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{mem, ptr::null_mut};
-use crystal_palace_rs::import;
-use crystal_palace_sys::tcg::DLLMAIN_FUNC;
+use crystal_sdk::import;
+use crystal_bindings::tcg::DLLMAIN_FUNC;
 use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, LPVOID}}, um::winnt::{DLL_PROCESS_ATTACH, MEM_RELEASE}};
 
 import!(KERNEL32!VirtualFree(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationType: DWORD) -> i32);

@@ -2,7 +2,7 @@
 # Demonstrate loading a DLL and hooking functions.
 #
 name     "Simple Loader (Hooking)"
-describe "Simple DLL loader that masks DLL content when MessageBoxA called"
+describe "A base DLL loader that supports layered hooking"
 author   "Raphael Mudge"
  
 x86:
@@ -21,8 +21,8 @@ x86:
         push $DLL
             link "my_data"
  
-        # setup our XOR hooks
-        run "xorhooks_setup.spec"
+        # loop through the hooking modules specified in %HOOKS and call their setup targets
+        foreach %HOOKS: call %_ "setup"
  
         # load our hook PICO
         load "bin/hook.x86.o"
@@ -34,8 +34,14 @@ x86:
             # bring our freeAndRun() functionality into this PICO
             run "freeandrun.spec"
  
-            # let's get specific... bring in our XOR hooks
-            run "xorhooks.spec"
+            # loop through the hooking modules specified in %HOOKS and call their hooks targets
+            foreach %HOOKS: call %_ "hooks"
+ 
+            # filter out any hooks our DLL capability will not need.
+            filterhooks $DLL
+ 
+            # register our GetProcAddress as an explicit hook, so we can propgate to other stuff
+            addhook "KERNEL32$GetProcAddress" "__GetProcAddress@8"
  
             # export and link it
             export
@@ -46,7 +52,7 @@ x86:
  
 x64:
     load "bin/rs/loader.x64.o"
-        make pic +gofirst
+        make pic +gofirst +optimize
  
         run "../simple_pic/services.spec"
         mergelib "../../libtcg/libtcg.x64.zip"
@@ -54,15 +60,18 @@ x64:
         push $DLL
             link "my_data"
  
-        run "xorhooks_setup.spec"
+        foreach %HOOKS: call %_ "setup"
  
-        load "bin/rs/hook.x64.o"
+        load "bin/c/hook.x64.o"
             make object
  
             mergelib "../../libtcg/libtcg.x64.zip"
  
             run "freeandrun.spec"
-            run "xorhooks.spec"
+ 
+            foreach %HOOKS: call %_ "hooks"
+            filterhooks $DLL
+            addhook "KERNEL32$GetProcAddress" "_GetProcAddress"
  
             export
             link "my_hooks"

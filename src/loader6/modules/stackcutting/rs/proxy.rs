@@ -5,7 +5,7 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{mem};
-use stack_cutting::{PROXYCALL, get_frame};
+use stackcutting::{PROXYCALL, get_frame};
 use winapi::shared::{basetsd::ULONG_PTR};
 
 type CALL0 = unsafe extern "system" fn() -> ULONG_PTR;

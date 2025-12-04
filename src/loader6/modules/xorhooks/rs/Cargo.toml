@@ -1,5 +1,5 @@
 [package]
-name = "loader1"
+name = "xorhooks"
 version = "0.1.0"
 edition = "2024"
 
@@ -10,5 +10,9 @@ winapi = { workspace = true }
 ntapi  = { workspace = true }
 
 [[bin]]
-name = "loader"
-path = "loader.rs"
+name = "xorhooks"
+path = "xorhooks.rs"
+
+[[bin]]
+name = "xorhooks_setup"
+path = "xorhooks_setup.rs"

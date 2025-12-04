@@ -4,8 +4,8 @@
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
-use crystal_palace_rs::import;
-use crystal_palace_sys::tcg::{__resolve_hook, IMPORTFUNCS, ror13hash};
+use crystal_sdk::import;
+use crystal_bindings::tcg::{__resolve_hook, IMPORTFUNCS, ror13hash};
 use winapi::shared::{minwindef::{FARPROC, HMODULE}, ntdef::LPCSTR};
 
 import!(LoadLibraryA(arg1: LPCSTR) -> HMODULE);
@@ -18,7 +18,8 @@ import!(GetProcAddress(arg1: HMODULE, arg2: LPCSTR) -> FARPROC);
  * in the .spec file to register hooks
  */
 #[unsafe(no_mangle)]
-extern "system" fn _GetProcAddress(h_module: HMODULE, lp_proc_name: LPCSTR) -> FARPROC {
+#[cfg(target_arch = "x86_64")]
+extern "C" fn _GetProcAddress(h_module: HMODULE, lp_proc_name: LPCSTR) -> FARPROC {
     unsafe {
         let result = __resolve_hook(ror13hash(lp_proc_name));
         if !result.is_null() {

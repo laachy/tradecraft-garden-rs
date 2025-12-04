@@ -5,8 +5,8 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{ffi::c_void, mem, ptr::null_mut};
-use crystal_palace_rs::{append_data, import};
-use crystal_palace_sys::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoEntryPoint, PicoGetExport, PicoLoad, ProcessImports, SizeOfDLL};
+use crystal_sdk::{append_data, import};
+use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoGetExport, PicoLoad, ProcessImports, SizeOfDLL};
 use winapi::{shared::{minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE}};
 
 append_data!(my_hooks, findAppendedHOOKS);
@@ -19,10 +19,13 @@ import!(GetProcAddress(arg1: HMODULE, arg2: LPCSTR) -> FARPROC);
 type PicoMainFunc3 = unsafe extern "C" fn(loader: *const u8, dll_entry: *const u8, dll_base: *const u8);
 
 unsafe extern "C" { 
-    fn setupHooks(src_hooks: *const u8, dst_hooks: *const u8, data: *const DLLDATA, dst_dll: *const u8); 
-    fn getStart() -> *const u8;
+    
     fn __tag_freeandrun() -> i32;
 }
+
+#[inline(never)]
+#[unsafe(no_mangle)]
+extern "C" fn setupHooks(_src_hooks: *const u8, _dst_hooks: *const u8, _data: *const DLLDATA, _dst_dll: *const u8){}
 
 fn setup_coff(funcs: &mut IMPORTFUNCS, src_data: *const u8) -> *const c_void{
     unsafe {
@@ -30,7 +33,7 @@ fn setup_coff(funcs: &mut IMPORTFUNCS, src_data: *const u8) -> *const c_void{
         let dst_data;
 
         /* allocate memory, we're combining everything into one memory region */
-        dst_code = VirtualAlloc(null_mut(), PicoCodeSize(src_data as _) as _, MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        dst_code = VirtualAlloc(null_mut(), (PicoDataSize(src_data as _) + PicoCodeSize(src_data as _)) as _, MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         dst_data = dst_code as usize + PicoCodeSize(src_data as _) as usize;
 
         /* load our pico into our destination address, thanks! */
@@ -59,7 +62,7 @@ extern "C" fn init() {
 
         /* allocate memory for our DLL and the other stuff within our layout.  */
         dst_dll = VirtualAlloc(null_mut(), SizeOfDLL(&mut data) as _, MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-        
+
         /* Before we go ANY further, let's setup our hooks PICO */
         src_hooks = findAppendedHOOKS();
         dst_hooks = setup_coff(&mut funcs, src_hooks);
@@ -69,16 +72,29 @@ extern "C" fn init() {
 
         /* Run our hook setup logic (tradecraft specific) */
         setupHooks(src_hooks as _, dst_hooks as _, &data, dst_dll as _);
-        
+
         /* load the damned DLL */
         LoadDLL(&mut data, src_dll as _, dst_dll as _);
 
         /* process the imports */
         ProcessImports(&mut funcs, &mut data, dst_dll as _);
 
-        /* run DLL via our freeAndRun (free.c) exported function merged into our hooks PICO */
+        /* run DLL via our freeAndRun exported function merged into our hooks PICO */
         mem::transmute::<_, PicoMainFunc3>(PicoGetExport(src_hooks as _, dst_hooks as _, __tag_freeandrun()))(
-            getStart(), EntryPoint(&mut data, dst_dll as _).unwrap_unchecked() as _, dst_dll as _
+            getStart() as _, EntryPoint(&mut data, dst_dll as _).unwrap_unchecked() as _, dst_dll as _
         );
     }
+}
+
+/*
+ * Our entry point for the loader. init() is a join point for any setup functionality (e.g., redirect "init" "_my_init")
+ */
+#[unsafe(no_mangle)]
+extern "C" fn go() {
+    init();
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn getStart() -> *const c_void{
+    go as _
 }

@@ -5,7 +5,7 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{ptr::{null, null_mut}};
-use crystal_palace_rs::{import, brk};
+use crystal_sdk::{import};
 use winapi::{shared::{minwindef::{DWORD, LPDWORD}, ntdef::{LONG, LPCSTR, LPSTR}}};
 
 #[derive(Default)]
@@ -27,10 +27,10 @@ struct ENVKEY {
 #[repr(C)]
 struct _VERIFY {
     check_sum: DWORD,
-    value: *const u8,
+    value: [u8; 0],
 }
 
-import!(ADVAPI!SystemFunction033(data: *mut USTRING, key: *mut USTRING) -> LONG);
+import!(ADVAPI32!SystemFunction033(data: *mut USTRING, key: *mut USTRING) -> LONG);
 import!(KERNEL32!GetVolumeInformationA(lpRootPathName: LPCSTR, lpVolumeNameBuffer: LPSTR, nVolumeNameSize: DWORD, lpVolumeSerialNumber: LPDWORD, 
     lpMaximumComponentLength: LPDWORD, lpFileSystemFlags: LPDWORD, lpFileSystemNameBuffer: LPSTR, nFileSystemNameSize: DWORD) -> i32);
 
@@ -87,8 +87,6 @@ extern "C" fn go(dst: *mut u8, len: i32, outlen: *mut i32) -> *const u8 {
         let ddlen;
         let ddsum;
 
-        brk();
-
         /* This is where we bring our environment-derived key into the mix.
         * Here, we are using the c:\ drive's serial number as a simple key. */
         key = derive_key_serial_no();
@@ -100,8 +98,6 @@ extern "C" fn go(dst: *mut u8, len: i32, outlen: *mut i32) -> *const u8 {
         u_key.length = size_of::<ENVKEY>() as _;
         u_key.buffer = &mut key as *mut _ as _;
 
-        brk();
-
         /* call the System033 function to do an RC4 decrypt */
         SystemFunction033(&mut u_data, &mut u_key);
 
@@ -111,21 +107,17 @@ extern "C" fn go(dst: *mut u8, len: i32, outlen: *mut i32) -> *const u8 {
         /* decrypted data length */
         ddlen = len - size_of::<DWORD>() as i32;
 
-        brk();
-
         /* store our output length too, if an outptr was provided */
         if !outlen.is_null() {
             *outlen = ddlen;
         }
 
         /* checksum for our decrypted data */
-        ddsum = checksum((*hdr).value, ddlen as _);
-
-        brk();
+        ddsum = checksum((*hdr).value.as_ptr(), ddlen as _);
 
         /* this succeeded if the packed-in and calculcated checksums match */
         if (*hdr).check_sum == ddsum {
-            return (*hdr).value;
+            return (*hdr).value.as_ptr();
         }
         null()
     }

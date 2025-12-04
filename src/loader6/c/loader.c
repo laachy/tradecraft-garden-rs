@@ -75,9 +75,10 @@ char * getStart();
 int __tag_freeandrun();
  
 /*
- * This is defined in our tradecraft module
+ * This is an empty function, but we will use redirect to LAYER setupHooks from our modules on top of this.
  */
-void setupHooks(char * srchooks, char * dsthooks, DLLDATA * data, char * dstdll);
+void setupHooks(char * srchooks, char * dsthooks, DLLDATA * data, char * dstdll) {
+}
  
 /*
  * Our reflective loader itself, have fun, go nuts!
@@ -121,4 +122,15 @@ void init() {
  
     /* run DLL via our freeAndRun (free.c) exported function merged into our hooks PICO */
     ((PICOMAIN_FUNC_3)PicoGetExport(srchooks, dsthooks, __tag_freeandrun())) (getStart(), (char *)EntryPoint(&data, dstdll), dstdll);
+}
+ 
+/*
+ * Our entry point for the loader. init() is a join point for any setup functionality (e.g., redirect "init" "_my_init")
+ */
+void go() {
+    init();
+}
+ 
+char * getStart() {
+    return (char *)go;
 }

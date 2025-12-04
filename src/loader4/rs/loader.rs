@@ -5,35 +5,28 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{mem, ptr::null_mut};
-use crystal_palace_rs::{append_data, import};
-use crystal_palace_sys::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL};
+use crystal_sdk::{append_data, import};
+use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL};
 use winapi::{shared::{minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{DLL_PROCESS_ATTACH, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE}};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn resolve(module: *const i8, function: *const i8) -> FARPROC {
     unsafe {
-        // Transmute patched addresses into typed function pointers
-        let p_get_module_handle: GetModuleHandleAFn =
-            core::mem::transmute(pGetModuleHandle);
-
-        let p_get_proc_address: GetProcAddressFn =
-            core::mem::transmute(pGetProcAddress);
-
-        let h_module = p_get_module_handle(module as LPCSTR);
-        p_get_proc_address(h_module, function as LPCSTR)
+        let h_module = mem::transmute::<_, GetModuleHandleAFn>(pGetModuleHandle)(module);
+        mem::transmute::<_, GetProcAddressFn>(pGetProcAddress)(h_module, function as _)
     }
 }
 
-type GetModuleHandleAFn = unsafe extern "system" fn(lpModuleName: *const i8) -> HMODULE;
+type GetModuleHandleAFn = unsafe extern "system" fn(lp_module_name: *const i8) -> HMODULE;
 
 
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text")]
-static pGetModuleHandle: usize = 0;
+static mut pGetModuleHandle: usize = 1;
 
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text")]
-static pGetProcAddress: usize = 0;
+static mut pGetProcAddress: usize = 1;
 
 append_data!(my_data, findAppendedDLL);
 

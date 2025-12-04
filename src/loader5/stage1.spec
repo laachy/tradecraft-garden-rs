@@ -53,9 +53,10 @@ x64:
  
         load "bin/rs/guardrail.x64.o"
             make object
+
             export
             link "coff_gr"
 
-            disassemble "out"
+        disassemble "out"
  
         export

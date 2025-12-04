@@ -140,8 +140,7 @@ void configstackcutting(PROXY proxy, char * retaddr, char * frameaddr);
 void init();
  
 /*
- * tradecraft modules in this architecture are responsible for kicking off the init chain and its responsible for
- * providing a getStart() function implementation to make the beginning of our PIC findable
+ * Our new entrypoint that's going to hijack the existing one.
  */
 void go() {
     /*
@@ -159,8 +158,4 @@ void go() {
  
     /* start our init chain */
     init();
-}
- 
-char * getStart() {
-    return (char *)go;
 }

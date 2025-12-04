@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-crystal-palace-sys = { workspace = true }
-crystal-palace-rs = { workspace = true }
+crystal-bindings = { workspace = true }
+crystal-sdk = { workspace = true }
 winapi = { workspace = true }
 ntapi  = { workspace = true }
 

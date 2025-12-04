@@ -2,8 +2,8 @@
 #![no_main]
 
 use core::{ptr::null_mut};
-use crystal_palace_rs::{append_data, import};
-use crystal_palace_sys::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL, findFunctionByHash, findModuleByHash};
+use crystal_sdk::{append_data, import};
+use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, ProcessImports, SizeOfDLL, findFunctionByHash, findModuleByHash};
 use winapi::{shared::{minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{DLL_PROCESS_ATTACH, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE}};
 
 #[panic_handler]
