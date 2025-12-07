@@ -18,8 +18,8 @@ pub extern "C" fn resolve(mod_hash: u32, func_hash: u32) -> FARPROC {
     }
 }
 
-append_data!(my_data, findAppendedDLL);
-append_data!(my_bof, findAppendedPICO);
+append_data!(my_data, findAppendedDLL, "__DLLDATA__");
+append_data!(my_bof, findAppendedPICO, "__BOFDATA__");
 
 import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: usize, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
 import!(LoadLibraryA(arg1: LPCSTR) -> HMODULE);
