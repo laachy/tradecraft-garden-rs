@@ -17,8 +17,8 @@ unsafe extern "C" {
     fn __tag_freeandrun() -> i32;
 }
 
-append_data!(my_data, findAppendedDLL);
-append_data!(my_guardexec, findAppendedGE);
+append_data!(my_data, findAppendedDLL, "__DLLDATA__");
+append_data!(my_guardexec, findAppendedGE, "__GRDATA__");
 
 import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: usize, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
 import!(LoadLibraryA(arg1: LPCSTR) -> HMODULE);
