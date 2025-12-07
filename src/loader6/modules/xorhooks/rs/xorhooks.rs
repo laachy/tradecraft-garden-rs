@@ -5,7 +5,7 @@
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
 use core::{ffi, slice::from_raw_parts_mut};
-use crystal_sdk::import;
+use crystal_sdk::{import};
 use winapi::shared::{minwindef::{DWORD, UINT}, ntdef::LPCSTR, windef::HWND};
 
 import!(USER32!MessageBoxA(hWnd: HWND, lpText: LPCSTR, lpCaption: LPCSTR, uType: UINT) -> ffi::c_int);

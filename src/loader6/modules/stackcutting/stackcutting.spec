@@ -81,7 +81,7 @@ setup.x64:
     load "bin/rs/stackcut.x64.o"
         merge
  
-    load "bin/rs/proxy.x64.o"
+    load "bin/c/proxy.x64.o"
         make pic
         export
         preplen

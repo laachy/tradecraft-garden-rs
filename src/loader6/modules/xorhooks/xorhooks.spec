@@ -57,3 +57,5 @@ hooks.x64:
  
     addhook "USER32$MessageBoxA"
     attach "USER32$MessageBoxA" "_xMessageBoxA"
+
+    disassemble "xor.txt"

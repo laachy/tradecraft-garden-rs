@@ -2,12 +2,14 @@
 #![no_main]
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
 
 use core::{arch::asm, mem::zeroed, ptr::addr_of};
 
+use crystal_bindings::tcg::{PicoGetExport, DLLDATA};
 use crystal_sdk::import;
-use crystal_bindings::tcg::{DLLDATA, PicoGetExport};
 use stackcutting::{PROXY, PROXYCALL};
 use winapi::shared::{basetsd::{SIZE_T, ULONG_PTR}, minwindef::{DWORD, HMODULE, LPVOID, PDWORD, UINT}, ntdef::{LPCSTR, VOID}, windef::HWND};
 
@@ -29,12 +31,10 @@ type PicoConfigStackcutting = fn(proxy: PROXY, ret_addr: *const u8, frame_addr: 
 /*
  * GLOBALS
  */
-#[unsafe(link_section = ".data")]
-#[unsafe(no_mangle)]
+#[unsafe(link_section = ".cplink")]
 static mut CALL_PROXY: Option<PROXY> = None;
 
-#[unsafe(link_section = ".data")]
-#[unsafe(no_mangle)]
+#[unsafe(link_section = ".cplink")]
 static mut CALL: PROXYCALL = unsafe { zeroed() };
 
 #[unsafe(no_mangle)]
@@ -42,8 +42,9 @@ static mut CALL: PROXYCALL = unsafe { zeroed() };
 fn proxy(argc: u32) -> ULONG_PTR {
     unsafe {
         CALL.argc = argc;
+
         let r = CALL_PROXY.unwrap_unchecked()(addr_of!(CALL));
-        
+
         asm!("", options(nomem, nostack, preserves_flags));
 
         r
@@ -55,7 +56,7 @@ fn proxy(argc: u32) -> ULONG_PTR {
  */
 #[unsafe(no_mangle)]
 extern "system" fn _cLoadLibraryA(lp_lib_file_name: LPCSTR) -> HMODULE {
-     unsafe {
+    unsafe {
         CALL.function = LoadLibraryA_ptr() as _;
         CALL.args[0] = lp_lib_file_name as _;
 
@@ -100,7 +101,7 @@ extern "system" fn _cSleep(dw_milliseconds: DWORD) {
 }
 
 #[unsafe(no_mangle)]
-extern "system" fn _cVirtualAlloc(lp_address: LPVOID, dw_size: SIZE_T, fl_allocation_type: DWORD, fl_protect: DWORD) -> LPVOID {
+extern "system" fn _cVirtualAlloc(lp_address: LPVOID, dw_size: SIZE_T, fl_allocation_type: DWORD, fl_protect: DWORD,) -> LPVOID {
     unsafe {
         CALL.function = VirtualAlloc_ptr() as _;
         CALL.args[0] = lp_address as _;
@@ -141,9 +142,14 @@ extern "system" fn _cVirtualProtect(lp_address: LPVOID, dw_size: SIZE_T, fl_new_
  */
 #[unsafe(no_mangle)]
 extern "C" fn setupHooksStackCutting(src_hooks: *const u8, dst_hooks: *const u8, data: &DLLDATA, dst_dll: *mut u8) {
-    unsafe { 
-        core::mem::transmute::<_, PicoConfigStackcutting>(PicoGetExport(src_hooks as _, dst_hooks as _, __tag_configstackcutting()).unwrap_unchecked())(
-            CALL_PROXY.unwrap_unchecked(), CALL.spoof_me.ret_addr as _, CALL.spoof_me.frame_addr as _
+    unsafe {
+        core::mem::transmute::<_, PicoConfigStackcutting>(
+            PicoGetExport(src_hooks as _, dst_hooks as _, __tag_configstackcutting())
+                .unwrap_unchecked(),
+        )(
+            CALL_PROXY.unwrap_unchecked(),
+            CALL.spoof_me.ret_addr as _,
+            CALL.spoof_me.frame_addr as _,
         );
 
         setupHooks(src_hooks, dst_hooks, data, dst_dll);

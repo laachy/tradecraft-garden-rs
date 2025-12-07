@@ -62,8 +62,8 @@ x64:
  
         foreach %HOOKS: call %_ "setup"
  
-        load "bin/c/hook.x64.o"
-            make object
+        load "bin/rs/hook.x64.o"
+            make object +optimize
  
             mergelib "../../libtcg/libtcg.x64.zip"
  
@@ -72,6 +72,8 @@ x64:
             foreach %HOOKS: call %_ "hooks"
             filterhooks $DLL
             addhook "KERNEL32$GetProcAddress" "_GetProcAddress"
+
+            disassemble "last"
  
             export
             link "my_hooks"
