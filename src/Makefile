@@ -1,6 +1,7 @@
 # Find all directories that contain a Makefile (any depth)
-SUBDIRS := $(filter-out ./,$(sort \
-	$(dir $(shell find . -name Makefile -o -name makefile))))
+ROOT := $(realpath ..)
+SUBDIRS := $(filter-out $(CURDIR)/,$(sort \
+	$(dir $(shell find $(ROOT) -name '[Mm]akefile'))))
 
 .PHONY: all $(SUBDIRS) clean
 
