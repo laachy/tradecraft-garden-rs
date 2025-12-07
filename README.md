@@ -80,7 +80,7 @@ Included is a root **Makefile** `(src/Makefile)` that compiles **EVERYTHING** yo
 ## Notes
 
 - [Size] While Rust is usually known for larger binary sizes compared to C, I have noticed that the object and final shellcode sizes have been smaller using Rust in this project. Without much thought or research into it, I believe this is because of the tail call optimisations present. You can test the sizes for your self, I think one of the best tests is loader 7, or alternatively comparing objects.
-- [Rust LTO](CallWalk.java) While originally I wanted to keep the source code of Crystal Palace untouched, I came to the conclusion that it is in my best interests to do some minimal modifications. Vanilla Crystal Palace does not touch JMP instructions. I have fixed this for optimisations so that final binaries are smaller and more complex capabilities can be linked. You can find this at `CallWalk.java`
+- [Rust LTO](CallWalk.java#L63) While originally I wanted to keep the source code of Crystal Palace untouched, I came to the conclusion that it is in my best interests to do some minimal modifications. Vanilla Crystal Palace does not touch JMP instructions. I have fixed this for optimisations so that final binaries are smaller and more complex capabilities can be linked. You can find this at `CallWalk.java`
 
 # TODO and issues
 
