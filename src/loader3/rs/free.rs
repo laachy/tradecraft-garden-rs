@@ -20,5 +20,7 @@ extern "C" fn go(loader: *mut u8, dll_entry: *const u8, dll_base: *const u8) {
         mem::transmute::<_, DLLMAIN_FUNC>(dll_entry).unwrap_unchecked()(
             dll_base as _, DLL_PROCESS_ATTACH, null_mut()
         );
+
+        ExitThread(0);
     }
 }

