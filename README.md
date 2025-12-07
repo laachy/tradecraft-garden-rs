@@ -10,8 +10,27 @@ I have provided all of the original Tradecraft Garden as a means to give context
 
 One thing to also add is that I have noticed rust object files and end binaries to be smaller than its c counterparts. (You can compare for yourself)
 
+## Contents
+- [Garden Quick Find](#garden-quick-find)
+- [Usage / Guide](#usage)
+- [TODO and Issues](#todo-and-issues)
 
-# Usage
+## Garden Quick Find
+- [Simple Loader 1](./src/loader1) Simple DLL loader
+- [Simple Loader 2 (COFF)](./src/loader2) Simple DLL loader that frees itself with an embedded COFF
+- [Simple Loader 3 (Resource Masking)](./src/loader3) Simple DLL loader that accesses masked resources
+- [Simple Loader 4 (Pointer Patching)](./src/loader4) Simple DLL loader that bootstraps with patched-in pointers
+- [Simple Loader 5 (Execution Guardrails)](./src/loader5) Simple loader stage that implements execution guardrails
+- [Simple Loader 6 (Hooking)](./src/loader6) Simple DLL loader that uses IAT hooks to change loaded DLL's behavior
+    - [XOR Hooks](./src/loader6/modules/xorhooks) module to XOR mask a DLL when a hooked function is called
+    - [Stack Cutting](./src/loader6/modules/stackcutting) Push sensitive Win32 API calls through a stack-cutting call proxy
+- [Simple Loader 7 (COFF Capability)](./src/loader7) Simple OBJ loader
+- [Simple Loader 8 (Mixed COFF and DLL)](./src/loader8) Simple OBJ and DLL loader (supporting both)
+- [Simple PIC](./src/simple_pic) Simple PIC Services Module
+- [Page Streaming](./src/page_streaming) Use guard pages and Vectored Exception Handlers to "stream" DLL pages as needed
+
+
+## Usage
 ### Rust nightly toolchain (Windows GNU)
 
 This project requires the Rust **nightly** toolchain for the GNU ABI on Windows  
