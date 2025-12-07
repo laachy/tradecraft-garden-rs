@@ -10,7 +10,12 @@
 
 I have provided all of the original Tradecraft Garden as a means to give context to how **c to rust** PICOs translate in their writing conventions and also so that **c and rust** PICOs can be tested and linked with each other as a form of proof that this project can help expand the ecosystem which is position independent tradecraft in contrast to creating its own. For more information and a better learning experience I urge you to check out the original [Tradecraft Garden](https://tradecraftgarden.org/index.html) and the [blog](aff-wg.org) that explains new updates and design choices for the linker.
 
-Some of my goals in this project are to centralise information surrounding rust PICO development and to also enable this development with little to no changes to the original Crystal Palace source code.
+Some of my goals in this project are to:
+- centralise information surrounding rust PICO development
+- enable this development with little to no changes to the original Crystal Palace source code
+- allow rust PICOs to integrate seamlessly with c PICOs, including libraries
+- enable stronger typing for stricter design and abstracted interfaces within PICOs
+- possibly enabling use of existing crates for ease of development
 
 ## Contents
 - [Garden Quick Find](#garden-quick-find)
