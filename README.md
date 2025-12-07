@@ -63,8 +63,12 @@ Loaders are located within `src` and contain a **Makefile** that compiles indivi
 
 		Linking commands are the same as shown in the original tutorials. Demo DLLs and Objects are found in `src/demo`. These can be used for linking and testing.
 
+### Execution:
+
 # TODO and issues
 
- 1. The only loader/capability that doesn't work is loader6/stackcutting, it wont link with rust objects (specific issue with stackcut.rs globals), ive noticed crashing using .rs services module and im sure theres more issues. This will require a more in depth look into the crystal palace source code that I will do at a later date.
- 2. Optimise crystal palace directive does not work due to rust/llvm tail call optimisations where direct function symbols are not refrenced. This causes the linker to view them as unused where in reality their addresses are jumped to. To fix this would either need to disable tail call optimisations (at the callsite or globally for every function), provide a patch to the linker, or jmp, function symbol ??? (is that even possible, an idea anyway)
- 3. Other TODOs in crystal-sdk
+ 1. The only thing not working ATM is proxy.rs within stackcutting. Some kind of issue with stack frames, access exception on the second call.
+ 2. Fixing JMPs (tail call optimisation) within the linker. This is the best approach as TCO is worth keeping. Current issues are related to merging PICOs that use functions referenced on JMPs (xorhook_setup.rs), also hook placement (stackcut)
+ 3. Globals within stackcut are weird, I hacked around it by linking to .cplink but its better to use .bss. Not really sure what the exact issue is as it works fine on other loaders, will need to test more thoroughly with unitialised data that is merged.
+ 4. x86 (32bit) support and examples
+ 5. Other TODOs in crystal-sdk
