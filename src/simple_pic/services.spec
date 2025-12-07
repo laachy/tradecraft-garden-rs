@@ -20,7 +20,7 @@ x86:
     dfr "_resolve_ext" "strings"
  
 x64:
-    load "bin/c/services.x64.o"
+    load "bin/rs/services.x64.o"
         merge
  
     fixbss "getBSS"

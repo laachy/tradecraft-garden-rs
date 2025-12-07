@@ -18,7 +18,7 @@ x86:
  
 x64:
     push $OBJECT
-        make pic +gofirst
+        make pic +optimize +gofirst
  
         run "services.spec"
         mergelib "../../libtcg/libtcg.x64.zip"

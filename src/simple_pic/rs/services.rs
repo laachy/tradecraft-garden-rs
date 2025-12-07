@@ -9,8 +9,6 @@ use crystal_sdk::{import};
 use crystal_bindings::tcg::{DLLDATA, ParseDLL, findFunctionByHash, findModuleByHash};
 use winapi::{shared::{minwindef::{FARPROC, HMODULE}, ntdef::LPCSTR}, um::winnt::{IMAGE_SCN_CNT_INITIALIZED_DATA, IMAGE_SCN_MEM_READ, IMAGE_SCN_MEM_WRITE, IMAGE_SECTION_HEADER}};
 
-
-
 import!(KERNEL32!GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE);
 import!(LoadLibraryA(arg1: LPCSTR) -> HMODULE);
 import!(GetProcAddress(arg1: HMODULE, arg2: LPCSTR) -> FARPROC);
