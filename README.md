@@ -6,9 +6,11 @@
 
  - [Crystal Palace](https://tradecraftgarden.org/crystalpalace.html): "Linker and linker script language specialised to the needs of writing position-independent DLL and COFF loaders"
  - [crystal-bindings](https://github.com/laachy/crystal-bindings): Crate to dynamically generate *-sys style rust bindings from c headers, specifically to allow usage of crystal palace style libraries created in c in our rust PICOs
- - [crystal-sdk](https://github.com/laachy/crystal-sdk): Crate to enable usage of crystal palace linking features and ergonomic PICO development in rust
+ - [crystal-sdk](https://github.com/laachy/crystal-sdk): Crate to enable usage of crystal palace linking features and ergonomic PICO development in rust through low level tricks (mainly inline assembly)
 
 I have provided all of the original Tradecraft Garden as a means to give context to how **c to rust** PICOs translate in their writing conventions and also so that **c and rust** PICOs can be tested and linked with each other as a form of proof that this project can help expand the ecosystem which is position independent tradecraft in contrast to creating its own. For more information and a better learning experience I urge you to check out the original [Tradecraft Garden](https://tradecraftgarden.org/index.html) and the [blog](aff-wg.org) that explains new updates and design choices for the linker.
+
+Some of my goals in this project are to centralise information surrounding rust PICO development and to also enable this development with little to no changes to the original Crystal Palace source code.
 
 ## Contents
 - [Garden Quick Find](#garden-quick-find)
