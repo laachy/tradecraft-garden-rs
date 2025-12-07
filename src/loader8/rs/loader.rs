@@ -9,9 +9,6 @@ use winapi::{shared::{minwindef::{DWORD, FARPROC, HMODULE, LPVOID}, ntdef::LPCST
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! { loop {} }
 
-#[inline(always)]
-pub fn brk() { unsafe { core::arch::asm!("int3"); } }
-
 #[inline(never)]
 #[unsafe(no_mangle)]
 pub extern "C" fn resolve(mod_hash: u32, func_hash: u32) -> FARPROC {

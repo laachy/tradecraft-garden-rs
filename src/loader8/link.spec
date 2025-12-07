@@ -28,7 +28,7 @@ x86.o:
  
     # push our COFF content onto the stack, turn it into a PICO and link it to my_data
     push $OBJECT
-        make object
+        make object +optimize
         export
         link "my_data"
  
@@ -36,6 +36,6 @@ x64.o:
     remap "go_object" "go"
  
     push $OBJECT
-        make object
+        make object +optimize
         export
         link "my_data"

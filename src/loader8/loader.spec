@@ -25,7 +25,7 @@ x86:
  
 x64:
     load "bin/rs/loader.x64.o"
-        make pic +gofirst
+        make pic +gofirst +optimize
  
         dfr "resolve" "ror13"
         mergelib "../../libtcg/libtcg.x64.zip"
