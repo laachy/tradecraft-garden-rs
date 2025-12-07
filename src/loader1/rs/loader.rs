@@ -19,7 +19,7 @@ pub extern "C" fn resolve(mod_hash: u32, func_hash: u32) -> FARPROC {
     }
 }
 
-append_data!(my_data, findAppendedDLL);
+append_data!(my_data, findAppendedDLL, "__DLLDATA__");
 
 import!(KERNEL32!VirtualAlloc(lpAddress: LPVOID, dwSize: usize, flAllocationType: DWORD, flProtect: DWORD) -> LPVOID);
 import!(LoadLibraryA(arg1: LPCSTR) -> HMODULE);
@@ -28,20 +28,29 @@ import!(GetProcAddress(arg1: HMODULE, arg2: LPCSTR) -> FARPROC);
 #[unsafe(no_mangle)]
 extern "C" fn go() {
     unsafe { 
-        let src = findAppendedDLL();
-        let mut data: DLLDATA = core::mem::zeroed();    
-
+        let src = findAppendedDLL(); /* find our DLL appended to this PIC */ 
+        let dst;
+        let mut data: DLLDATA = core::mem::zeroed();
+        
+        /* setup our IMPORTFUNCS data structure */
+        let mut funcs = IMPORTFUNCS { 
+            LoadLibraryA: Some(LoadLibraryA_ptr()), 
+            GetProcAddress: Some(GetProcAddress_ptr()) 
+        };
+  
+        /* parse our DLL! */
         ParseDLL(src as _, &mut data);
-
-        let dst = VirtualAlloc( null_mut(), SizeOfDLL(&mut data) as usize, MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
+        
+        /* allocate memory for it! */
+        dst = VirtualAlloc( null_mut(), SizeOfDLL(&mut data) as usize, MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        
+        /* load the damned thing */
         LoadDLL(&mut data, src as _, dst as _);
-
-        let mut funcs = IMPORTFUNCS { LoadLibraryA: Some(LoadLibraryA_ptr()), GetProcAddress: Some(GetProcAddress_ptr()) };
+        
+        /* process the imports */
         ProcessImports(&mut funcs, &mut data, dst as _);
-
-        if let Some(func) = EntryPoint(&mut data, dst as _) {
-            func(dst as _, DLL_PROCESS_ATTACH, null_mut());
-        }
+        
+        /* pass execution to our DLL */   
+        EntryPoint(&mut data, dst as _).unwrap_unchecked()(dst as _, DLL_PROCESS_ATTACH, null_mut());
     };
 }
