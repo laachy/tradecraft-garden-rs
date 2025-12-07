@@ -46,7 +46,8 @@ $(OUT_RS_DIR)/%.x64.o: | $(OUT_RS_DIR)
 		--release \
 		--target $(RC_64) \
 		--bin $* \
-		-- -Zno-link -Cjump-tables=no --emit=obj=$(abspath $@)
+		-- -Zno-link -Cjump-tables=no \
+		--emit=obj=$(abspath $@)
 
 # ---------- clean ----------
 
