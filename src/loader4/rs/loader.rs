@@ -19,7 +19,6 @@ pub extern "C" fn resolve(module: *const i8, function: *const i8) -> FARPROC {
 
 type GetModuleHandleAFn = unsafe extern "system" fn(lp_module_name: *const i8) -> HMODULE;
 
-
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text")]
 static mut pGetModuleHandle: usize = 1;
@@ -58,7 +57,8 @@ extern "C" fn go() {
 
         /* process the imports */
         ProcessImports(&mut funcs, &mut data, dst as _);
-
+        
+        /* pass execution to our DLL */
         EntryPoint(&mut data, dst as _).unwrap_unchecked()(
             dst as _, DLL_PROCESS_ATTACH, null_mut()
         );

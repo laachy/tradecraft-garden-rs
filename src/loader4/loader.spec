@@ -34,7 +34,7 @@ x86:
  
 x64:
     load "bin/rs/loader.x64.o"
-        make pic +gofirst
+        make pic +gofirst +optimize
  
         patch "pGetModuleHandle" $GMH
         patch "pGetProcAddress"  $GPA
